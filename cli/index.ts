@@ -1,69 +1,105 @@
-#!/usr/bin/env node
 import fs from "fs-extra";
 import path from "path";
 import axios from "axios";
 import prompts from "prompts";
 import chalk from "chalk";
+import { execSync } from "child_process";
 
 // Define component file structure
 interface ComponentFile {
   filename: string;
   url: string;
-  content?: string; // For local development
 }
 
-// Define available components with their files
-const components: Record<string, ComponentFile[]> = {
-  button: [
-    {
-      filename: "Button.tsx",
-      url: "https://raw.githubusercontent.com/your-repo/components/button/Button.tsx",
-    },
-    {
-      filename: "button-animations.css",
-      url: "https://raw.githubusercontent.com/your-repo/components/button/button-animations.css",
-    },
-  ],
-  // Add more components as needed
+// Define component dependencies
+interface ComponentConfig {
+  files: ComponentFile[];
+  dependencies: string[];
+  devDependencies: string[];
+}
+
+// Define available components with their files and dependencies
+const components: Record<string, ComponentConfig> = {
+  button: {
+    files: [
+      {
+        filename: "Button.tsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/components/button/Button.tsx",
+      },
+      {
+        filename: "button-animations.css",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/components/button/button-animations.css",
+      },
+    ],
+    dependencies: ["clsx"],
+    devDependencies: [],
+  },
 };
 
-// For local development, use existing files instead of remote URLs
-const useLocalFiles = true; // Set to false when deploying
+// Validate if the user is in a valid project directory
+function validateProjectDirectory() {
+  const packageJsonPath = path.join(process.cwd(), "package.json");
+  if (!fs.existsSync(packageJsonPath)) {
+    console.log(
+      chalk.red(
+        "❌ Could not find package.json. Please run this command in the root of a valid project directory."
+      )
+    );
+    process.exit(1);
+  }
+}
+
+// Install dependencies
+async function installDependencies(deps: string[], dev: boolean = false) {
+  if (deps.length === 0) return;
+
+  const pm = fs.existsSync(path.join(process.cwd(), "yarn.lock"))
+    ? "yarn"
+    : fs.existsSync(path.join(process.cwd(), "pnpm-lock.yaml"))
+    ? "pnpm"
+    : "npm";
+
+  const command =
+    pm === "npm"
+      ? `npm install ${dev ? "--save-dev" : ""} ${deps.join(" ")}`
+      : pm === "yarn"
+      ? `yarn add ${dev ? "--dev" : ""} ${deps.join(" ")}`
+      : `pnpm add ${dev ? "--save-dev" : ""} ${deps.join(" ")}`;
+
+  console.log(chalk.blue(`Installing dependencies...`));
+  try {
+    execSync(command, { stdio: "inherit" });
+    console.log(chalk.green(`Dependencies installed successfully.`));
+  } catch (error) {
+    console.log(
+      chalk.red(`Failed to install dependencies. Please install them manually:`)
+    );
+    console.log(chalk.yellow(`  ${command}`));
+  }
+}
 
 // Fetch and save component files
-async function fetchComponent(componentName: string) {
-  if (!components[componentName]) {
+async function fetchComponent(componentName: string, targetDir: string) {
+  const component = components[componentName];
+
+  if (!component) {
     console.log(chalk.red(`Component "${componentName}" not found.`));
     return;
   }
 
-  // Create component directory in user's project
-  const componentDir = path.join(process.cwd(), "components", componentName);
+  // Create the target directory if it doesn't exist
+  const componentDir = path.join(targetDir, componentName);
   await fs.ensureDir(componentDir);
 
-  console.log(chalk.blue(`Installing ${componentName} component...`));
+  console.log(chalk.blue(`Adding ${componentName} component...`));
 
   // Process each file in the component
-  for (const file of components[componentName]) {
+  for (const file of component.files) {
     const destPath = path.join(componentDir, file.filename);
 
     try {
-      if (useLocalFiles) {
-        // Copy from local project during development
-        const sourcePath = path.join(
-          process.cwd(),
-          "..",
-          "components",
-          componentName,
-          file.filename
-        );
-        await fs.copy(sourcePath, destPath);
-      } else {
-        // Fetch from remote URL in production
-        const response = await axios.get(file.url);
-        await fs.writeFile(destPath, response.data);
-      }
-
+      const response = await axios.get(file.url);
+      await fs.writeFile(destPath, response.data);
       console.log(chalk.green(`  ✓ Added ${file.filename}`));
     } catch (error) {
       console.log(
@@ -85,46 +121,28 @@ export * from './${componentClassName}';
   await fs.writeFile(path.join(componentDir, "index.ts"), indexContent);
   console.log(chalk.green(`  ✓ Added index.ts for easier imports`));
 
+  // Install dependencies
+  await installDependencies(component.dependencies);
+  await installDependencies(component.devDependencies, true);
+
   console.log(
-    chalk.green(
-      `\n✅ ${componentName} component has been installed successfully!`
-    )
+    chalk.green(`\n✅ ${componentName} component has been added successfully!`)
   );
   console.log(chalk.blue(`Import it using:`));
   console.log(
-    chalk.yellow(
-      `  import { ${componentClassName} } from './components/${componentName}'`
-    )
+    chalk.yellow(`  import { ${componentClassName} } from '${componentName}'`)
   );
 
   // Check if this is a CSS component and add extra instructions
-  if (
-    components[componentName].some((file) => file.filename.endsWith(".css"))
-  ) {
+  if (component.files.some((file) => file.filename.endsWith(".css"))) {
     console.log(
       chalk.blue(`\nThis component includes CSS that needs to be imported:`)
     );
     console.log(
-      chalk.yellow(`  // In your main component or CSS entry point:`)
-    );
-    console.log(
       chalk.yellow(
-        `  import './components/${componentName}/${
-          components[componentName].find((f) => f.filename.endsWith(".css"))
-            ?.filename
-        }'`
-      )
-    );
-
-    console.log(chalk.blue(`\nImport notes by framework:`));
-    console.log(
-      chalk.yellow(
-        `  • React/Vite: Import the CSS directly in your component or main.tsx/jsx`
-      )
-    );
-    console.log(
-      chalk.yellow(
-        `  • Next.js: Import in _app.js/tsx or use CSS Modules approach`
+        `  import './${componentName}/${
+          component.files.find((f) => f.filename.endsWith(".css"))?.filename
+        }';`
       )
     );
   }
@@ -132,6 +150,22 @@ export * from './${componentClassName}';
 
 // CLI prompt
 (async () => {
+  // Validate the project directory
+  validateProjectDirectory();
+
+  // Prompt the user for the target directory
+  const { targetDir } = await prompts({
+    type: "text",
+    name: "targetDir",
+    message:
+      "Enter the directory where you want to add the components (e.g., src/components):",
+    initial: "src/components",
+  });
+
+  // Ensure the target directory exists
+  await fs.ensureDir(targetDir);
+
+  // Prompt the user to select a component
   const response = await prompts({
     type: "select",
     name: "component",
@@ -143,6 +177,6 @@ export * from './${componentClassName}';
   });
 
   if (response.component) {
-    await fetchComponent(response.component);
+    await fetchComponent(response.component, targetDir);
   }
 })();

@@ -1,12 +1,28 @@
 {
-  "name": "arc-ui-cli",
-  "version": "1.0.0",
+  "name": "@arc-ui/cli",
+  "version": "0.0.1",
   "type": "module",
   "bin": {
-    "my-ui": "./dist/index.js"
+    "arc-ui": "./dist/index.js"
+  },
+  "description": "CLI tool for adding ARC-UI components to your React projects",
+  "keywords": [
+    "react",
+    "components",
+    "ui",
+    "cli"
+  ],
+  "author": "Arkia Ebrahimi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arkia1/ARC-UI-LIB"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
-    "build": "tsup index.ts --format esm --dts",
+    "build": "tsup",
     "dev": "tsx index.ts",
     "prepublishOnly": "npm run build"
   },
