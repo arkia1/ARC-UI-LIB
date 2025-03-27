@@ -1,0 +1,147 @@
+/* Base animations setup */
+.bx-anim-fadeIn {
+  animation-name: bxFadeIn;
+  animation-fill-mode: forwards;
+}
+
+.bx-anim-pulse {
+  animation-name: bxPulse;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+.bx-anim-bounce {
+  animation-name: bxBounce;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+.bx-anim-slide {
+  animation-name: bxSlide;
+  animation-fill-mode: forwards;
+}
+
+.bx-anim-shake {
+  animation-name: bxShake;
+  animation-iteration-count: infinite;
+}
+
+.bx-anim-glow-pulse {
+  animation-name: bxGlowPulse;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+/* Animation durations */
+.bx-duration-300 {
+  animation-duration: 300ms;
+}
+.bx-duration-500 {
+  animation-duration: 500ms;
+}
+.bx-duration-700 {
+  animation-duration: 700ms;
+}
+.bx-duration-750 {
+  animation-duration: 750ms;
+}
+.bx-duration-1000 {
+  animation-duration: 1000ms;
+}
+.bx-duration-1500 {
+  animation-duration: 1500ms;
+}
+.bx-duration-2000 {
+  animation-duration: 2000ms;
+}
+.bx-duration-2250 {
+  animation-duration: 2250ms;
+}
+.bx-duration-3000 {
+  animation-duration: 3000ms;
+}
+
+/* Animation delays */
+.bx-delay-300 {
+  animation-delay: 300ms;
+}
+.bx-delay-600 {
+  animation-delay: 600ms;
+}
+.bx-delay-1000 {
+  animation-delay: 1000ms;
+}
+
+/* Animation triggers */
+.bx-trigger-hover {
+  animation-play-state: paused;
+}
+.bx-trigger-hover:hover {
+  animation-play-state: running;
+}
+.bx-trigger-click {
+  animation-play-state: paused;
+}
+
+/* Keyframes */
+@keyframes bxFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bxPulse {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.07);
+  }
+}
+
+@keyframes bxBounce {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes bxSlide {
+  0% {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes bxShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-4px);
+  }
+  40%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes bxGlowPulse {
+  0% {
+    box-shadow: 0 0 0 rgba(66, 153, 225, 0);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(66, 153, 225, 0.8);
+  }
+}
