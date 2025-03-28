@@ -130,23 +130,35 @@ async function fetchComponent(componentName: string, targetDir: string, format: 
     chalk.green(`\n✅ ${componentName} component has been added successfully!`)
   );
 
-  // Update the general index file in the target directory with the correct extension
+  // Update the general index file in the target directory based on the format selected
+  // Use .ts for tsx format and .js for jsx format
   const indexExt = format === "tsx" ? "ts" : "js";
   const generalIndexPath = path.join(targetDir, `index.${indexExt}`);
   const componentName_capitalized = componentName.charAt(0).toUpperCase() + componentName.slice(1);
-  const exportStatement = `export { default as ${componentName_capitalized} } from './${componentName}/${componentName_capitalized}';\n`;
+  
+  // Use the correct file extension in the import statement based on format
+  const componentExt = format;
+  const exportStatement = `export { default as ${componentName_capitalized} } from './${componentName}/${componentName_capitalized}.${componentExt}';\n`;
 
   try {
     // Create the file if it doesn't exist
     if (!fs.existsSync(generalIndexPath)) {
       await fs.writeFile(generalIndexPath, '');
+      console.log(chalk.green(`  ✓ Created new index.${indexExt} file`));
     }
-    await fs.appendFile(generalIndexPath, exportStatement);
-    console.log(chalk.green(`  ✓ Updated general index.${indexExt} with ${componentName}`));
+    
+    // Check if the export already exists to avoid duplicates
+    const currentContent = await fs.readFile(generalIndexPath, 'utf8');
+    if (!currentContent.includes(exportStatement)) {
+      await fs.appendFile(generalIndexPath, exportStatement);
+      console.log(chalk.green(`  ✓ Updated index.${indexExt} with ${componentName} export`));
+    } else {
+      console.log(chalk.yellow(`  ℹ Export for ${componentName} already exists in index.${indexExt}`));
+    }
   } catch (error) {
     console.log(
       chalk.red(
-        `  ✗ Failed to update general index.${indexExt}: ${(error as Error).message}`
+        `  ✗ Failed to update index.${indexExt}: ${(error as Error).message}`
       )
     );
   }
