@@ -9,6 +9,7 @@ import { execSync } from "child_process";
 interface ComponentFile {
   filename: string;
   url: string;
+  format?: "tsx" | "jsx" 
 }
 
 // Define component dependencies
@@ -25,6 +26,12 @@ const components: Record<string, ComponentConfig> = {
       {
         filename: "Button.tsx",
         url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/components/button/Button.tsx",
+        format: "tsx",
+      },
+      {
+        filename: "Button.jsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/components/button/Button.jsx",
+        format: "jsx",
       },
       {
         filename: "button-animations.css",
@@ -79,7 +86,7 @@ async function installDependencies(deps: string[], dev: boolean = false) {
 }
 
 // Fetch and save component files
-async function fetchComponent(componentName: string, targetDir: string) {
+async function fetchComponent(componentName: string, targetDir: string, format: "tsx" | "jsx") {
   const component = components[componentName];
 
   if (!component) {
@@ -91,10 +98,15 @@ async function fetchComponent(componentName: string, targetDir: string) {
   const componentDir = path.join(targetDir, componentName);
   await fs.ensureDir(componentDir);
 
-  console.log(chalk.blue(`Adding ${componentName} component...`));
+  console.log(chalk.blue(`Adding ${componentName} component in ${format.toUpperCase()} format...`));
+
+  // Filter files for the selected format (only apply filtering to tsx/jsx files)
+  const filesToDownload = component.files.filter(file => 
+    !file.format || file.format === format
+  );
 
   // Process each file in the component
-  for (const file of component.files) {
+  for (const file of filesToDownload) {
     const destPath = path.join(componentDir, file.filename);
 
     try {
@@ -118,17 +130,23 @@ async function fetchComponent(componentName: string, targetDir: string) {
     chalk.green(`\n✅ ${componentName} component has been added successfully!`)
   );
 
-  // Update the general index.ts file in the target directory
-  const generalIndexPath = path.join(targetDir, "index.ts");
-  const exportStatement = `export { default as ${componentName.charAt(0).toUpperCase() + componentName.slice(1)} } from './${componentName}/${componentName.charAt(0).toUpperCase() + componentName.slice(1)}';\n`;
+  // Update the general index file in the target directory with the correct extension
+  const indexExt = format === "tsx" ? "ts" : "js";
+  const generalIndexPath = path.join(targetDir, `index.${indexExt}`);
+  const componentName_capitalized = componentName.charAt(0).toUpperCase() + componentName.slice(1);
+  const exportStatement = `export { default as ${componentName_capitalized} } from './${componentName}/${componentName_capitalized}';\n`;
 
   try {
+    // Create the file if it doesn't exist
+    if (!fs.existsSync(generalIndexPath)) {
+      await fs.writeFile(generalIndexPath, '');
+    }
     await fs.appendFile(generalIndexPath, exportStatement);
-    console.log(chalk.green(`  ✓ Updated general index.ts with ${componentName}`));
+    console.log(chalk.green(`  ✓ Updated general index.${indexExt} with ${componentName}`));
   } catch (error) {
     console.log(
       chalk.red(
-        `  ✗ Failed to update general index.ts: ${(error as Error).message}`
+        `  ✗ Failed to update general index.${indexExt}: ${(error as Error).message}`
       )
     );
   }
@@ -162,7 +180,18 @@ async function fetchComponent(componentName: string, targetDir: string) {
     })),
   });
 
+  // Format the component name to match the file structure
+  const {format} = await prompts({
+    type: "select",
+    name: "format",
+    message: "Which format do you want to use?",
+    choices: [
+      { title: "TypeScript (tsx)", value: "tsx" },
+      { title: "JavaScript (jsx)", value: "jsx" },
+    ],
+  })
+
   if (response.component) {
-    await fetchComponent(response.component, targetDir);
+    await fetchComponent(response.component, targetDir, format);
   }
 })();
