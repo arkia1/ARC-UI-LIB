@@ -17,6 +17,7 @@ interface ComponentConfig {
   files: ComponentFile[];
   dependencies: string[];
   devDependencies: string[];
+  requiresTailwind?: boolean; // Add flag for components that require Tailwind
 }
 
 // Define available components with their files and dependencies
@@ -40,6 +41,7 @@ const components: Record<string, ComponentConfig> = {
     ],
     dependencies: ["clsx"],
     devDependencies: [],
+    requiresTailwind: true, // Mark that Button requires Tailwind
   },
 };
 
@@ -53,6 +55,216 @@ function validateProjectDirectory() {
       )
     );
     process.exit(1);
+  }
+}
+
+// Check if Tailwind CSS is installed and configured
+async function checkTailwindSetup() {
+  console.log(chalk.blue("Checking Tailwind CSS setup..."));
+  
+  const packageJsonPath = path.join(process.cwd(), "package.json");
+  const tailwindConfigPath = path.join(process.cwd(), "tailwind.config.js");
+  const postcssConfigPath = path.join(process.cwd(), "postcss.config.js");
+  
+  let isTailwindInstalled = false;
+  let isTailwindConfigured = false;
+  
+  // Check if Tailwind is installed
+  try {
+    const packageJson = await fs.readJson(packageJsonPath);
+    const dependencies = { ...packageJson.dependencies, ...packageJson.devDependencies };
+    isTailwindInstalled = !!dependencies.tailwindcss;
+    
+    // Check what version if installed
+    if (isTailwindInstalled) {
+      const version = dependencies.tailwindcss;
+      const isV3 = version.startsWith("^3") || version.startsWith("~3") || version.startsWith("3");
+      
+      if (!isV3) {
+        console.log(chalk.yellow("⚠️ Found Tailwind CSS, but it's not version 3. ARC UI components are designed for Tailwind v3."));
+        return false;
+      }
+    }
+  } catch (error) {
+    console.log(chalk.red("Error reading package.json:", (error as Error).message));
+    return false;
+  }
+  
+  // Check if Tailwind is configured
+  isTailwindConfigured = fs.existsSync(tailwindConfigPath) && fs.existsSync(postcssConfigPath);
+  
+  if (!isTailwindInstalled) {
+    console.log(chalk.yellow("⚠️ Tailwind CSS is not installed in this project."));
+    return false;
+  }
+  
+  if (!isTailwindConfigured) {
+    console.log(chalk.yellow("⚠️ Tailwind CSS configuration files are missing."));
+    return false;
+  }
+  
+  console.log(chalk.green("✅ Tailwind CSS is properly installed and configured."));
+  return true;
+}
+
+// Install and initialize Tailwind CSS according to official v3 docs
+async function setupTailwind() {
+  const pm = fs.existsSync(path.join(process.cwd(), "yarn.lock"))
+    ? "yarn"
+    : fs.existsSync(path.join(process.cwd(), "pnpm-lock.yaml"))
+    ? "pnpm"
+    : "npm";
+
+  console.log(chalk.blue("Installing Tailwind CSS dependencies in your project..."));
+  
+  // Install Tailwind and related packages
+  const installCmd = 
+    pm === "npm" 
+      ? "npm install -D tailwindcss@3 postcss autoprefixer"
+      : pm === "yarn"
+      ? "yarn add -D tailwindcss@3 postcss autoprefixer"
+      : "pnpm add -D tailwindcss@3 postcss autoprefixer";
+  
+  try {
+    execSync(installCmd, { stdio: "inherit", cwd: process.cwd() });
+    console.log(chalk.green("✅ Tailwind CSS dependencies installed in your project."));
+    
+    // Instead of using npx, create the config files manually
+    console.log(chalk.blue("Creating Tailwind CSS configuration files..."));
+    
+    // Create tailwind.config.js
+    const tailwindConfigPath = path.join(process.cwd(), "tailwind.config.js");
+    const tailwindConfigContent = `/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}`;
+
+    // Create postcss.config.js
+    const postcssConfigPath = path.join(process.cwd(), "postcss.config.js");
+    const postcssConfigContent = `export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}`;
+
+    // Write the config files
+    await fs.writeFile(tailwindConfigPath, tailwindConfigContent);
+    await fs.writeFile(postcssConfigPath, postcssConfigContent);
+    
+    console.log(chalk.green("✅ Tailwind CSS configuration files created in your project."));
+    
+    // Create or update CSS file with Tailwind directives
+    await createTailwindCSSFile();
+    
+    return true;
+  } catch (error) {
+    console.log(chalk.red(`Failed to setup Tailwind CSS: ${(error as Error).message}`));
+    console.log(chalk.yellow(`
+Please install and configure Tailwind CSS manually by following these steps:
+1. Install dependencies: ${installCmd}
+2. Create a tailwind.config.js file with the following content:
+   /** @type {import('tailwindcss').Config} */
+   export default {
+      content: [
+        "./index.html",
+        "./src/**/*.{js,ts,jsx,tsx}",
+      ],
+      theme: {
+      extend: {},
+    },
+    plugins: [],
+  }
+
+3. Create a postcss.config.js file with the following content:
+   export default {
+     plugins: {
+       tailwindcss: {},
+       autoprefixer: {},
+     },
+   }
+
+4. Add Tailwind directives to your CSS file:
+   @tailwind base;
+   @tailwind components;
+   @tailwind utilities;
+`));
+    return false;
+  }
+}
+
+// Helper function to create/update the CSS file with Tailwind directives
+async function createTailwindCSSFile() {
+  // Common paths for CSS files in different frameworks
+  const possibleCssPaths = [
+    "src/styles/globals.css",
+    "src/styles/global.css",
+    "src/index.css",
+    "src/App.css",
+    "styles/globals.css",
+    "styles/global.css",
+    "css/main.css"
+  ];
+  
+  const tailwindDirectives = `@tailwind base;
+@tailwind components;
+@tailwind utilities;
+`;
+
+  // First, try to find and update an existing CSS file
+  for (const cssPath of possibleCssPaths) {
+    const fullPath = path.join(process.cwd(), cssPath);
+    if (fs.existsSync(fullPath)) {
+      try {
+        const cssContent = await fs.readFile(fullPath, "utf8");
+        if (!cssContent.includes("@tailwind")) {
+          // Add Tailwind directives at the beginning of the file
+          await fs.writeFile(fullPath, tailwindDirectives + cssContent);
+          console.log(chalk.green(`✅ Updated ${cssPath} with Tailwind directives.`));
+          return;
+        } else {
+          console.log(chalk.green(`✅ ${cssPath} already has Tailwind directives.`));
+          return;
+        }
+      } catch (error) {
+        console.log(chalk.yellow(`⚠️ Error updating ${cssPath}: ${(error as Error).message}`));
+      }
+    }
+  }
+  
+  // If no existing CSS file was found, create a new one
+  // Ask user where to create the CSS file
+  const { cssPath } = await prompts({
+    type: "text",
+    name: "cssPath",
+    message: "Where should we create the CSS file with Tailwind directives in your project?",
+    initial: "src/styles/global.css"
+  });
+  
+  const fullPath = path.join(process.cwd(), cssPath);
+  
+  try {
+    // Ensure directory exists
+    await fs.ensureDir(path.dirname(fullPath));
+    
+    // Write Tailwind directives to the file
+    await fs.writeFile(fullPath, tailwindDirectives);
+    console.log(chalk.green(`✅ Created ${cssPath} with Tailwind directives in your project.`));
+    
+    // Inform user to import this CSS file
+    console.log(chalk.blue(`
+Remember to import '${cssPath}' in your main entry file (like index.js, App.js, etc.).
+For example: import './${cssPath.replace(/^src\//, '')}'
+`));
+  } catch (error) {
+    console.log(chalk.red(`Failed to create CSS file: ${(error as Error).message}`));
   }
 }
 
@@ -73,10 +285,10 @@ async function installDependencies(deps: string[], dev: boolean = false) {
       ? `yarn add ${dev ? "--dev" : ""} ${deps.join(" ")}`
       : `pnpm add ${dev ? "--save-dev" : ""} ${deps.join(" ")}`;
 
-  console.log(chalk.blue(`Installing dependencies...`));
+  console.log(chalk.blue(`Installing dependencies in your project...`));
   try {
-    execSync(command, { stdio: "inherit" });
-    console.log(chalk.green(`Dependencies installed successfully.`));
+    execSync(command, { stdio: "inherit", cwd: process.cwd() });
+    console.log(chalk.green(`Dependencies installed successfully in your project.`));
   } catch (error) {
     console.log(
       chalk.red(`Failed to install dependencies. Please install them manually:`)
@@ -94,11 +306,35 @@ async function fetchComponent(componentName: string, targetDir: string, format: 
     return;
   }
 
+  // Check if component requires Tailwind and verify Tailwind setup
+  if (component.requiresTailwind) {
+    const isTailwindReady = await checkTailwindSetup();
+    
+    if (!isTailwindReady) {
+      const { setupTailwindNow } = await prompts({
+        type: "confirm",
+        name: "setupTailwindNow",
+        message: "This component requires Tailwind CSS v3. Would you like to install and configure it now in your project?",
+        initial: true
+      });
+      
+      if (setupTailwindNow) {
+        const success = await setupTailwind();
+        if (!success) {
+          console.log(chalk.yellow("Proceeding with component installation, but it may not display correctly without Tailwind CSS."));
+        }
+      } else {
+        console.log(chalk.yellow("Proceeding without Tailwind setup. Component may not display correctly."));
+      }
+    }
+  }
+
   // Create the target directory if it doesn't exist
-  const componentDir = path.join(targetDir, componentName);
+  const fullTargetDir = path.join(process.cwd(), targetDir);
+  const componentDir = path.join(fullTargetDir, componentName);
   await fs.ensureDir(componentDir);
 
-  console.log(chalk.blue(`Adding ${componentName} component in ${format.toUpperCase()} format...`));
+  console.log(chalk.blue(`Adding ${componentName} component in ${format.toUpperCase()} format to your project...`));
 
   // Filter files for the selected format (only apply filtering to tsx/jsx files)
   const filesToDownload = component.files.filter(file => 
@@ -112,7 +348,7 @@ async function fetchComponent(componentName: string, targetDir: string, format: 
     try {
       const response = await axios.get(file.url);
       await fs.writeFile(destPath, response.data);
-      console.log(chalk.green(`  ✓ Added ${file.filename}`));
+      console.log(chalk.green(`  ✓ Added ${file.filename} to your project`));
     } catch (error) {
       console.log(
         chalk.red(
@@ -127,13 +363,13 @@ async function fetchComponent(componentName: string, targetDir: string, format: 
   await installDependencies(component.devDependencies, true);
 
   console.log(
-    chalk.green(`\n✅ ${componentName} component has been added successfully!`)
+    chalk.green(`\n✅ ${componentName} component has been added successfully to your project!`)
   );
 
   // Update the general index file in the target directory based on the format selected
   // Use .ts for tsx format and .js for jsx format
   const indexExt = format === "tsx" ? "ts" : "js";
-  const generalIndexPath = path.join(targetDir, `index.${indexExt}`);
+  const generalIndexPath = path.join(fullTargetDir, `index.${indexExt}`);
   const componentName_capitalized = componentName.charAt(0).toUpperCase() + componentName.slice(1);
   
   // Use the correct file extension in the import statement based on format
@@ -144,14 +380,14 @@ async function fetchComponent(componentName: string, targetDir: string, format: 
     // Create the file if it doesn't exist
     if (!fs.existsSync(generalIndexPath)) {
       await fs.writeFile(generalIndexPath, '');
-      console.log(chalk.green(`  ✓ Created new index.${indexExt} file`));
+      console.log(chalk.green(`  ✓ Created new index.${indexExt} file in your project`));
     }
     
     // Check if the export already exists to avoid duplicates
     const currentContent = await fs.readFile(generalIndexPath, 'utf8');
     if (!currentContent.includes(exportStatement)) {
       await fs.appendFile(generalIndexPath, exportStatement);
-      console.log(chalk.green(`  ✓ Updated index.${indexExt} with ${componentName} export`));
+      console.log(chalk.green(`  ✓ Updated index.${indexExt} with ${componentName} export in your project`));
     } else {
       console.log(chalk.yellow(`  ℹ Export for ${componentName} already exists in index.${indexExt}`));
     }
@@ -179,7 +415,7 @@ async function fetchComponent(componentName: string, targetDir: string, format: 
   });
 
   // Ensure the target directory exists
-  await fs.ensureDir(targetDir);
+  await fs.ensureDir(path.join(process.cwd(), targetDir));
 
   // Prompt the user to select a component
   const response = await prompts({
