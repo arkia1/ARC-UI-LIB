@@ -63,36 +63,16 @@ const components: Record<string, ComponentConfig> = {
 
 // Define available templates with their files and dependencies
 const templates: Record<string, TemplateConfig> = {
-  notFound: {
-    files: [
-      {
-        filename: "NotFound.tsx",
-        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/404/NotFound.tsx",
-        format: "tsx",
-      },
-      {
-        filename: "NotFound.jsx",
-        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/404/NotFound.jsx",
-        format: "jsx",
-      },
-    ],
-    dependencies: [],
-    devDependencies: [],
-    requiresTailwind: true,
-    category: "errors/404"
-  },
-
-  // Add new 4xx error templates
   clientSideErrors: {
     files: [
       {
         filename: "ClientSideErrors.tsx",
-        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/ClientSideErrors/ClientSideErrors.tsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/ClientSideErrors.tsx",
         format: "tsx",
       },
       {
         filename: "ClientSideErrors.jsx",
-        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/ClientSideErrors/ClientSideErrors.jsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/ClientSideErrors.jsx",
         format: "jsx",
       },
     ],
