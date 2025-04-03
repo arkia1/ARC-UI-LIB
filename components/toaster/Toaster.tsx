@@ -35,13 +35,13 @@ const ADD_TOAST = 'ADD_TOAST';
 const REMOVE_TOAST = 'REMOVE_TOAST';
 
 // Toast Options
-interface ToastOptions {
+export interface ToastOptions {
   id: string;
   message: string;
   duration?: number;
-  icon?: JSX.Element; // Optional SVG icon
+  icon?: JSX.Element;
   animationVariant?: 'fade' | 'slide' | 'pop' | 'modern';
-  type?: string; // Add type property to ToastOptions
+  type?: string;
 }
 
 interface ToastContextProps {
@@ -109,13 +109,22 @@ const ToasterItem: FC<{ toast: ToastOptions; onClose: (id: string) => void }> = 
     return () => clearTimeout(timer);
   }, [toast.id, toast.duration, onClose]);
 
-  // Map toast type to left border color
-  const borderColor = toast.type === TOAST_TYPES.SUCCESS ? 'border-green-500'
-                    : toast.type === TOAST_TYPES.ERROR ? 'border-red-500'
-                    : toast.type === TOAST_TYPES.WARNING ? 'border-yellow-500'
-                    : 'border-blue-500';
+  // Map toast type to a thin left accent border
+  const borderColor = toast.type === TOAST_TYPES.SUCCESS ? 'border-l-4 border-green-500'
+                    : toast.type === TOAST_TYPES.ERROR ? 'border-l-4 border-red-500'
+                    : toast.type === TOAST_TYPES.WARNING ? 'border-l-4 border-yellow-500'
+                    : 'border-l-4 border-blue-500';
 
-  // Choose animation class based on animationVariant
+  // Modern design: white background in light, black background in dark mode
+  const variantClasses: Record<string, string> = {
+    modern: "bg-white text-black dark:bg-black dark:text-white",
+    minimal: "bg-gray-100 text-black dark:bg-gray-900 dark:text-white border border-gray-300 dark:border-gray-700",
+    fade: "bg-gray-50 text-black dark:bg-gray-800 dark:text-white",
+    slide: "bg-gray-50 text-black dark:bg-gray-800 dark:text-white",
+    pop: "bg-gray-50 text-black dark:bg-gray-800 dark:text-white",
+  };
+
+  // Use animation if provided; default to fadeIn if modern
   const animationClass = toast.animationVariant === 'fade'
     ? 'animate-fadeIn'
     : toast.animationVariant === 'slide'
@@ -126,7 +135,7 @@ const ToasterItem: FC<{ toast: ToastOptions; onClose: (id: string) => void }> = 
 
   return (
     <div
-      className={`toaster-item ${animationClass} relative p-3 rounded shadow-md border-l-4 ${borderColor} bg-white text-black dark:bg-gray-800 dark:text-white`}
+      className={`toaster-item ${animationClass} relative p-3 rounded ${variantClasses[toast.animationVariant || "modern"]} ${borderColor}`}
     >
       {toast.icon && <span className="mr-2">{toast.icon}</span>}
       <span>{toast.message}</span>
@@ -180,25 +189,4 @@ export const useToast = () => {
   const ctx = useContext(ToastContext);
   if (!ctx) throw new Error('useToast must be used within ToastProvider');
   return ctx;
-};
-
-// Convenience object for easily adding each toast type
-// Renamed from Toast to ToastService to avoid naming conflict
-export const ToastService = {
-  success: (message: string, options?: Partial<ToastOptions>) => {
-    const { addToast } = useToast();
-    return addToast(message, { ...options, type: TOAST_TYPES.SUCCESS });
-  },
-  error: (message: string, options?: Partial<ToastOptions>) => {
-    const { addToast } = useToast();
-    return addToast(message, { ...options, type: TOAST_TYPES.ERROR });
-  },
-  warning: (message: string, options?: Partial<ToastOptions>) => {
-    const { addToast } = useToast();
-    return addToast(message, { ...options, type: TOAST_TYPES.WARNING });
-  },
-  info: (message: string, options?: Partial<ToastOptions>) => {
-    const { addToast } = useToast();
-    return addToast(message, { ...options, type: TOAST_TYPES.INFO });
-  }
 };

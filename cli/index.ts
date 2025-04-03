@@ -9,7 +9,7 @@ import { execSync } from "child_process";
 interface ComponentFile {
   filename: string;
   url: string;
-  format?: "tsx" | "jsx" 
+  format?: "tsx" | "jsx" | "ts" | "js"; // Added format for flexibility
 }
 
 // Define component dependencies
@@ -36,7 +36,7 @@ interface TemplateConfig {
   category?: string; // Optional category for organizing templates
 }
 
-// Extend components with toaster if needed
+// Update components configuration:
 const components: Record<string, ComponentConfig> = {
   button: {
     files: [
@@ -70,8 +70,18 @@ const components: Record<string, ComponentConfig> = {
         filename: "toast-animations.css",
         url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/components/toaster/toast-animations.css",
       },
+      {
+        filename: "useToastService.ts",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/components/toaster/useToastService.ts",
+        format: "ts",
+      },
+      {
+        filename: "useToastService.ts",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/components/toaster/useToastService.js",
+        format: "js",
+      },
     ],
-    dependencies: ["react-dom"], // Removed "styled-components"
+    dependencies: ["react-dom"],
     devDependencies: [],
     requiresTailwind: true,
   },

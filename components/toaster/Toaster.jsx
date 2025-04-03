@@ -39,21 +39,6 @@ const toastReducer = (state, action) => {
   }
 };
 
-// Helper function to get color based on toast type
-const getColorByType = (type) => {
-  switch (type) {
-    case TOAST_TYPES.SUCCESS:
-      return '#4caf50';
-    case TOAST_TYPES.ERROR:
-      return '#f44336';
-    case TOAST_TYPES.WARNING:
-      return '#ff9800';
-    case TOAST_TYPES.INFO:
-    default:
-      return '#2196f3';
-  }
-};
-
 // Use Tailwind for container layout
 function ToastContainer({ position, children }) {
   const baseClasses = "fixed z-[9999] flex flex-col gap-3 md:max-w-xs";
@@ -93,22 +78,16 @@ function ToastItem({ toast, onClose }) {
   const { id, message, type, duration, variant = "modern" } = toast;
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose(id);
-    }, duration);
-
-    return () => {
-      clearTimeout(timer);
-    };
+    const timer = setTimeout(() => onClose(id), duration);
+    return () => clearTimeout(timer);
   }, [id, duration, onClose]);
 
-  // Variant base classes
+  // Modern design styling with thin colored left accent border
   const variantClasses = {
-    modern: "bg-white text-black dark:bg-gray-800 dark:text-white shadow-md",
-    minimal: "bg-gray-100 dark:bg-gray-900 text-black dark:text-white border border-gray-300 dark:border-gray-700"
+    modern: "bg-white text-black dark:bg-black dark:text-white",
+    minimal: "bg-gray-100 text-black dark:bg-gray-900 dark:text-white border border-gray-300 dark:border-gray-700"
   };
 
-  // Color by type (Tailwind instead of styled-components)
   const colorByType = {
     success: "border-l-4 border-green-500",
     error: "border-l-4 border-red-500",
@@ -116,27 +95,18 @@ function ToastItem({ toast, onClose }) {
     info: "border-l-4 border-blue-500"
   };
 
+  const animationClass = toast.animationVariant === 'fade'
+    ? 'animate-fadeIn'
+    : toast.animationVariant === 'slide'
+    ? 'animate-slideIn'
+    : toast.animationVariant === 'pop'
+    ? 'animate-popIn'
+    : 'animate-fadeIn';
+
   return (
-    <div
-      className={`relative overflow-hidden flex items-start p-3 rounded transition-all duration-300 ${variantClasses[variant]} ${colorByType[type]} animate-slideIn`}
-    >
-      {/* Optional icons or text */}
+    <div className={`relative p-3 rounded transition-all duration-300 ${variantClasses[variant]} ${colorByType[type]} ${animationClass}`}>
       <div className="flex-1 mx-2 text-sm">{message}</div>
-      <button
-        onClick={() => onClose(id)}
-        className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 ml-2"
-      >
-        ×
-      </button>
-      <div
-        className="absolute bottom-0 left-0 h-1 bg-gray-200 dark:bg-gray-600 w-full"
-        style={{ animation: `toastProgress linear ${duration}ms forwards` }}
-      >
-        <div
-          className="h-full bg-current"
-          style={{ animation: `toastProgressFill linear ${duration}ms forwards` }}
-        />
-      </div>
+      <button onClick={() => onClose(id)} className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 ml-2">×</button>
     </div>
   );
 }
@@ -196,26 +166,6 @@ export const useToast = () => {
     throw new Error('useToast must be used within a ToastProvider');
   }
   return context;
-};
-
-// Convenience methods - rename to ToastService to avoid conflict
-export const ToastService = {
-  success: (message, duration, variant) => {
-    const { addToast } = useToast();
-    return addToast(message, TOAST_TYPES.SUCCESS, duration, variant);
-  },
-  error: (message, duration, variant) => {
-    const { addToast } = useToast();
-    return addToast(message, TOAST_TYPES.ERROR, duration, variant);
-  },
-  warning: (message, duration, variant) => {
-    const { addToast } = useToast();
-    return addToast(message, TOAST_TYPES.WARNING, duration, variant);
-  },
-  info: (message, duration, variant) => {
-    const { addToast } = useToast();
-    return addToast(message, TOAST_TYPES.INFO, duration, variant);
-  }
 };
 
 // Tailwind animations
