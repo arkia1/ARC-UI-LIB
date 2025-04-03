@@ -1,6 +1,8 @@
 import React, { FC, useEffect, useState } from "react";
 
-interface UnauthorizedProps {
+interface ClientSideErrorsProps {
+  errorCode?: 400 | 401 | 403 | 404 | 405;
+  customMessage?: string;
   onGoBack?: () => void;
   themeMode?: "system" | "light" | "dark";
   bgImageLight?: string;
@@ -9,11 +11,20 @@ interface UnauthorizedProps {
   overrideDarkColor?: string;
   customTextColor?: string;
   customAccentColor?: string;
-  customMessage?: string;
   showPatternBackground?: boolean;
 }
 
-const Unauthorized: FC<UnauthorizedProps> = ({
+const defaultMessages: Record<number, string> = {
+  400: "Bad Request",
+  401: "You are not authorized to view this page.",
+  403: "Access to this page is forbidden.",
+  404: "The page you're looking for doesn't exist or has been moved.",
+  405: "Method Not Allowed"
+};
+
+const ClientSideErrors: FC<ClientSideErrorsProps> = ({
+  errorCode = 404,
+  customMessage,
   onGoBack,
   themeMode = "system",
   bgImageLight = "",
@@ -22,7 +33,6 @@ const Unauthorized: FC<UnauthorizedProps> = ({
   overrideDarkColor = "#000000",
   customTextColor,
   customAccentColor,
-  customMessage = "You are not authorized to view this page.",
   showPatternBackground = true
 }) => {
   const [mounted, setMounted] = useState(false);
@@ -35,28 +45,20 @@ const Unauthorized: FC<UnauthorizedProps> = ({
   useEffect(() => {
     if (themeMode === "system") {
       setIsDarkMode(window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+      const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      const handleChange = (e: MediaQueryListEvent) => setIsDarkMode(e.matches);
+
+      darkModeMediaQuery.addEventListener("change", handleChange);
+      return () => darkModeMediaQuery.removeEventListener("change", handleChange);
     } else {
       setIsDarkMode(themeMode === "dark");
     }
   }, [themeMode]);
 
-  // Listen for dark mode changes from system
-  useEffect(() => {
-    if (themeMode === "system") {
-      const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-      const handleChange = (e: MediaQueryListEvent) => setIsDarkMode(e.matches);
-      
-      darkModeMediaQuery.addEventListener("change", handleChange);
-      return () => darkModeMediaQuery.removeEventListener("change", handleChange);
-    }
-  }, [themeMode]);
-
   const handleGoBack = () => {
-    if (onGoBack) {
-      onGoBack();
-    } else {
-      window.history.back();
-    }
+    if (onGoBack) onGoBack();
+    else window.history.back();
   };
 
   const getTextColor = () => {
@@ -94,34 +96,34 @@ const Unauthorized: FC<UnauthorizedProps> = ({
           }}
         />
       )}
-      
+
       {/* Corner decorations */}
       <div className="absolute top-0 left-0 w-20 h-20 border-t-4 border-l-4 dark:border-white border-black opacity-30" />
       <div className="absolute bottom-0 right-0 w-20 h-20 border-b-4 border-r-4 dark:border-white border-black opacity-30" />
 
       <div className="text-center max-w-xl relative z-10">
         <div className="relative">
-          <h1 
+          <h1
             className="text-9xl md:text-[15rem] font-black tracking-tighter mb-8"
-            style={{ color: getTextColor(), textShadow: `0 10px 30px rgba(0,0,0,0.1)` }}
+            style={{ color: getTextColor(), textShadow: "0 10px 30px rgba(0,0,0,0.1)" }}
           >
-            401
+            {errorCode}
           </h1>
-          
-          <div 
+
+          <div
             className="h-1 w-24 md:w-48 mx-auto mb-12"
             style={{ backgroundColor: getAccentColor() }}
           />
         </div>
-        
-        <p 
+
+        <p
           className="text-xl md:text-2xl mb-12 font-light leading-relaxed px-4"
           style={{ color: isDarkMode ? "#aaaaaa" : "#555555" }}
         >
-          {customMessage}
+          {customMessage || defaultMessages[errorCode]}
         </p>
-        
-        <button 
+
+        <button
           onClick={handleGoBack}
           className={`px-8 py-3 text-lg font-medium rounded shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${
             isDarkMode 
@@ -133,7 +135,7 @@ const Unauthorized: FC<UnauthorizedProps> = ({
           Go Back
         </button>
       </div>
-      
+
       {/* Top and bottom gradient lines */}
       <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-black via-gray-500 to-white dark:from-white dark:via-gray-500 dark:to-black opacity-60" />
       <div className="absolute bottom-0 left-0 w-full h-1.5 bg-gradient-to-r from-white via-gray-500 to-black dark:from-black dark:via-gray-500 dark:to-white opacity-60" />
@@ -141,4 +143,4 @@ const Unauthorized: FC<UnauthorizedProps> = ({
   );
 };
 
-export default Unauthorized;
+export default ClientSideErrors;
