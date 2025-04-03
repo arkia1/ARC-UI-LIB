@@ -174,3 +174,5 @@ export const useToast = () => {
 // @keyframes toastProgressFill { 0% { width: 0%; } to { width: 100%; } }
 // .animate-slideIn { @apply transform translate-x-full opacity-0; animation: slideIn 0.3s forwards; }
 // @keyframes slideIn { to { transform: translateX(0); opacity: 1; } }
+
+export default ToastProvider;
