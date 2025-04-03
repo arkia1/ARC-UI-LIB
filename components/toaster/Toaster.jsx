@@ -104,8 +104,8 @@ function ToastItem({ toast, onClose }) {
 
   // Variant base classes
   const variantClasses = {
-    modern: "bg-white dark:bg-gray-800 text-gray-800 dark:text-white shadow-lg",
-    minimal: "bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 border border-gray-300 dark:border-gray-700"
+    modern: "bg-white text-black dark:bg-gray-800 dark:text-white shadow-md",
+    minimal: "bg-gray-100 dark:bg-gray-900 text-black dark:text-white border border-gray-300 dark:border-gray-700"
   };
 
   // Color by type (Tailwind instead of styled-components)
@@ -121,9 +121,7 @@ function ToastItem({ toast, onClose }) {
       className={`relative overflow-hidden flex items-start p-3 rounded transition-all duration-300 ${variantClasses[variant]} ${colorByType[type]} animate-slideIn`}
     >
       {/* Optional icons or text */}
-      <div className="flex-1 mx-2 text-sm">
-        {message}
-      </div>
+      <div className="flex-1 mx-2 text-sm">{message}</div>
       <button
         onClick={() => onClose(id)}
         className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 ml-2"
@@ -155,12 +153,12 @@ export const ToastProvider = ({
 }) => {
   const [toasts, dispatch] = useReducer(toastReducer, []);
 
-  const addToast = (message, type = TOAST_TYPES.INFO, duration = defaultDuration) => {
+  const addToast = (message, type = TOAST_TYPES.INFO, duration = defaultDuration, variant = "modern") => {
     const id = Math.random().toString(36).substring(2, 9);
 
     dispatch({
       type: ADD_TOAST,
-      payload: { id, message, type, duration },
+      payload: { id, message, type, duration, variant },
     });
 
     return id;

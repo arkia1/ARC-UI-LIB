@@ -40,7 +40,7 @@ interface ToastOptions {
   message: string;
   duration?: number;
   icon?: JSX.Element; // Optional SVG icon
-  animationVariant?: 'fade' | 'slide' | 'pop';
+  animationVariant?: 'fade' | 'slide' | 'pop' | 'modern';
   type?: string; // Add type property to ToastOptions
 }
 
@@ -103,24 +103,34 @@ const ToastContainer: FC<{ children: ReactNode; position: string }> = ({ childre
   );
 };
 
-const ToasterItem: FC<{
-  toast: ToastOptions;
-  onClose: (id: string) => void;
-}> = memo(({ toast, onClose }) => {
+const ToasterItem: FC<{ toast: ToastOptions; onClose: (id: string) => void }> = memo(({ toast, onClose }) => {
   useEffect(() => {
     const timer = setTimeout(() => onClose(toast.id), toast.duration || 5000);
     return () => clearTimeout(timer);
   }, [toast.id, toast.duration, onClose]);
 
+  // Map toast type to left border color
+  const borderColor = toast.type === TOAST_TYPES.SUCCESS ? 'border-green-500'
+                    : toast.type === TOAST_TYPES.ERROR ? 'border-red-500'
+                    : toast.type === TOAST_TYPES.WARNING ? 'border-yellow-500'
+                    : 'border-blue-500';
+
+  // Choose animation class based on animationVariant
+  const animationClass = toast.animationVariant === 'fade'
+    ? 'animate-fadeIn'
+    : toast.animationVariant === 'slide'
+    ? 'animate-slideIn'
+    : toast.animationVariant === 'pop'
+    ? 'animate-popIn'
+    : 'animate-fadeIn';
+
   return (
     <div
-      className={`toaster-item ${toast.animationVariant || 'fade'} relative p-3 bg-white rounded shadow-md`}
+      className={`toaster-item ${animationClass} relative p-3 rounded shadow-md border-l-4 ${borderColor} bg-white text-black dark:bg-gray-800 dark:text-white`}
     >
       {toast.icon && <span className="mr-2">{toast.icon}</span>}
       <span>{toast.message}</span>
-      <button onClick={() => onClose(toast.id)} className="ml-4 px-2 py-1">
-        ×
-      </button>
+      <button onClick={() => onClose(toast.id)} className="ml-4 px-2 py-1">×</button>
     </div>
   );
 });
@@ -134,10 +144,11 @@ export const ToastProvider: FC<{
   const [toasts, dispatch] = useReducer(toastReducer, []);
 
   const addToast = (message: string, options?: Partial<ToastOptions>) => {
+    const { duration = 5000, animationVariant = "modern" } = options || {};
     const id = Math.random().toString(36).substring(2, 9);
     dispatch({
       type: 'ADD_TOAST',
-      payload: { id, message, ...options },
+      payload: { id, message, duration, animationVariant, ...options },
     });
     return id;
   };
@@ -147,7 +158,6 @@ export const ToastProvider: FC<{
   };
 
   const value = useMemo(() => ({ addToast, removeToast }), []);
-
   const visibleToasts = toasts.slice(0, maxToasts);
 
   return (
