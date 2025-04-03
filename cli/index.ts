@@ -81,6 +81,80 @@ const templates: Record<string, TemplateConfig> = {
     requiresTailwind: true,
     category: "errors/404"
   },
+
+  // Add new 4xx error templates
+  badRequest: {
+    files: [
+      {
+        filename: "BadRequest.tsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/400/BadRequest.tsx",
+        format: "tsx",
+      },
+      {
+        filename: "BadRequest.jsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/400/BadRequest.jsx",
+        format: "jsx",
+      },
+    ],
+    dependencies: [],
+    devDependencies: [],
+    requiresTailwind: true,
+    category: "errors/400"
+  },
+  unauthorized: {
+    files: [
+      {
+        filename: "Unauthorized.tsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/401/Unauthorized.tsx",
+        format: "tsx",
+      },
+      {
+        filename: "Unauthorized.jsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/401/Unauthorized.jsx",
+        format: "jsx",
+      },
+    ],
+    dependencies: [],
+    devDependencies: [],
+    requiresTailwind: true,
+    category: "errors/401"
+  },
+  forbidden: {
+    files: [
+      {
+        filename: "Forbidden.tsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/403/Forbidden.tsx",
+        format: "tsx",
+      },
+      {
+        filename: "Forbidden.jsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/403/Forbidden.jsx",
+        format: "jsx",
+      },
+    ],
+    dependencies: [],
+    devDependencies: [],
+    requiresTailwind: true,
+    category: "errors/403"
+  },
+  methodNotAllowed: {
+    files: [
+      {
+        filename: "MethodNotAllowed.tsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/405/MethodNotAllowed.tsx",
+        format: "tsx",
+      },
+      {
+        filename: "MethodNotAllowed.jsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/405/MethodNotAllowed.jsx",
+        format: "jsx",
+      },
+    ],
+    dependencies: [],
+    devDependencies: [],
+    requiresTailwind: true,
+    category: "errors/405"
+  },
 };
 
 // Validate if the user is in a valid project directory
