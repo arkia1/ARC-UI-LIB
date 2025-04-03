@@ -81,6 +81,24 @@ const templates: Record<string, TemplateConfig> = {
     requiresTailwind: true,
     category: "errors/4xx"
   },
+  serverSideErrors: {
+    files: [
+      {
+        filename: "ServerSideErrors.tsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/ServerSideErrors/ServerSideErrors.tsx",
+        format: "tsx",
+      },
+      {
+        filename: "ServerSideErrors.jsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/ServerSideErrors/ServerSideErrors.jsx",
+        format: "jsx",
+      },
+    ],
+    dependencies: [],
+    devDependencies: [],
+    requiresTailwind: true,
+    category: "errors/5xx"
+  },
 };
 
 // Validate if the user is in a valid project directory
