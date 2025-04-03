@@ -66,6 +66,10 @@ const components: Record<string, ComponentConfig> = {
         url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/components/toaster/Toaster.jsx",
         format: "jsx",
       },
+      {
+        filename: "toast-animations.css",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/components/toaster/toast-animations.css",
+      },
     ],
     dependencies: ["react-dom"], // Removed "styled-components"
     devDependencies: [],

@@ -173,7 +173,8 @@ export const useToast = () => {
 };
 
 // Convenience object for easily adding each toast type
-export const Toast = {
+// Renamed from Toast to ToastService to avoid naming conflict
+export const ToastService = {
   success: (message: string, options?: Partial<ToastOptions>) => {
     const { addToast } = useToast();
     return addToast(message, { ...options, type: TOAST_TYPES.SUCCESS });

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
+import './toast-animations.css';
 
 // Toast Context
 const ToastContext = createContext();
@@ -87,8 +88,8 @@ function ToastContainer({ position, children }) {
   );
 }
 
-// Create minimal & modern variants with Tailwind
-function Toast({ toast, onClose }) {
+// Toast Component - rename to ToastItem to avoid conflict
+function ToastItem({ toast, onClose }) {
   const { id, message, type, duration, variant = "modern" } = toast;
 
   useEffect(() => {
@@ -143,7 +144,7 @@ function Toast({ toast, onClose }) {
 }
 
 // Convert to memo for performance
-const MemoizedToast = memo(Toast);
+const MemoizedToast = memo(ToastItem);
 
 // Toast Provider Component
 export const ToastProvider = ({ 
@@ -199,8 +200,8 @@ export const useToast = () => {
   return context;
 };
 
-// Convenience methods
-export const Toast = {
+// Convenience methods - rename to ToastService to avoid conflict
+export const ToastService = {
   success: (message, duration, variant) => {
     const { addToast } = useToast();
     return addToast(message, TOAST_TYPES.SUCCESS, duration, variant);
