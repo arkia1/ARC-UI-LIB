@@ -36,7 +36,7 @@ interface TemplateConfig {
   category?: string; // Optional category for organizing templates
 }
 
-// Define available components with their files and dependencies
+// Extend components with toaster if needed
 const components: Record<string, ComponentConfig> = {
   button: {
     files: [
@@ -58,6 +58,18 @@ const components: Record<string, ComponentConfig> = {
     dependencies: ["clsx"],
     devDependencies: [],
     requiresTailwind: true, // Mark that Button requires Tailwind
+  },
+  toaster: {
+    files: [
+      {
+        filename: "Toaster.jsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/components/toaster/Toaster.jsx",
+        format: "jsx",
+      },
+    ],
+    dependencies: ["react-dom"], // Removed "styled-components"
+    devDependencies: [],
+    requiresTailwind: true,
   },
 };
 
