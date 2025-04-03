@@ -20,6 +20,22 @@ interface ComponentConfig {
   requiresTailwind?: boolean; // Add flag for components that require Tailwind
 }
 
+// Define template file structure (same as component structure)
+interface TemplateFile {
+  filename: string;
+  url: string;
+  format?: "tsx" | "jsx" 
+}
+
+// Define template dependencies
+interface TemplateConfig {
+  files: TemplateFile[];
+  dependencies: string[];
+  devDependencies: string[];
+  requiresTailwind?: boolean;
+  category?: string; // Optional category for organizing templates
+}
+
 // Define available components with their files and dependencies
 const components: Record<string, ComponentConfig> = {
   button: {
@@ -42,6 +58,28 @@ const components: Record<string, ComponentConfig> = {
     dependencies: ["clsx"],
     devDependencies: [],
     requiresTailwind: true, // Mark that Button requires Tailwind
+  },
+};
+
+// Define available templates with their files and dependencies
+const templates: Record<string, TemplateConfig> = {
+  notFound: {
+    files: [
+      {
+        filename: "NotFound.tsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/404/NotFound.tsx",
+        format: "tsx",
+      },
+      {
+        filename: "NotFound.jsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/404/NotFound.jsx",
+        format: "jsx",
+      },
+    ],
+    dependencies: [],
+    devDependencies: [],
+    requiresTailwind: true,
+    category: "errors/404"
   },
 };
 
@@ -400,46 +438,191 @@ async function fetchComponent(componentName: string, targetDir: string, format: 
   }
 }
 
+// Fetch and save template files
+async function fetchTemplate(templateName: string, targetDir: string, format: "tsx" | "jsx") {
+  const template = templates[templateName];
+
+  if (!template) {
+    console.log(chalk.red(`Template \"${templateName}\" not found.`));
+    return;
+  }
+
+  // Check if template requires Tailwind and verify Tailwind setup
+  if (template.requiresTailwind) {
+    const isTailwindReady = await checkTailwindSetup();
+    
+    if (!isTailwindReady) {
+      const { setupTailwindNow } = await prompts({
+        type: "confirm",
+        name: "setupTailwindNow",
+        message: "This template requires Tailwind CSS v3. Would you like to install and configure it now in your project?",
+        initial: true
+      });
+      
+      if (setupTailwindNow) {
+        const success = await setupTailwind();
+        if (!success) {
+          console.log(chalk.yellow("Proceeding with template installation, but it may not display correctly without Tailwind CSS."));
+        }
+      } else {
+        console.log(chalk.yellow("Proceeding without Tailwind setup. Template may not display correctly."));
+      }
+    }
+  }
+
+  // Create the target directory if it doesn't exist
+  const fullTargetDir = path.join(process.cwd(), targetDir);
+  const templateDir = path.join(fullTargetDir, templateName);
+  await fs.ensureDir(templateDir);
+
+  console.log(chalk.blue(`Adding ${templateName} template in ${format.toUpperCase()} format to your project...`));
+
+  // Filter files for the selected format (only apply filtering to tsx/jsx files)
+  const filesToDownload = template.files.filter(file => 
+    !file.format || file.format === format
+  );
+
+  // Process each file in the template
+  for (const file of filesToDownload) {
+    const destPath = path.join(templateDir, file.filename);
+
+    try {
+      const response = await axios.get(file.url);
+      await fs.writeFile(destPath, response.data);
+      console.log(chalk.green(`  ✓ Added ${file.filename} to your project`));
+    } catch (error) {
+      console.log(
+        chalk.red(
+          `  ✗ Failed to add ${file.filename}: ${(error as Error).message}`
+        )
+      );
+    }
+  }
+
+  // Install dependencies
+  await installDependencies(template.dependencies);
+  await installDependencies(template.devDependencies, true);
+
+  console.log(
+    chalk.green(`\n✅ ${templateName} template has been added successfully to your project!`)
+  );
+
+  // Update the general index file in the target directory based on the format selected
+  // Use .ts for tsx format and .js for jsx format
+  const indexExt = format === "tsx" ? "ts" : "js";
+  const generalIndexPath = path.join(fullTargetDir, `index.${indexExt}`);
+  
+  // Get the class name from the filename (assuming it follows PascalCase)
+  // For NotFound.tsx, the class name would be NotFound
+  const className = filesToDownload[0].filename.split('.')[0];
+  
+  // Use the correct file extension in the import statement based on format
+  const componentExt = format;
+  const exportStatement = `export { default as ${className} } from './${templateName}/${className}.${componentExt}';\n`;
+
+  try {
+    // Create the file if it doesn't exist
+    if (!fs.existsSync(generalIndexPath)) {
+      await fs.writeFile(generalIndexPath, '');
+      console.log(chalk.green(`  ✓ Created new index.${indexExt} file in your project`));
+    }
+    
+    // Check if the export already exists to avoid duplicates
+    const currentContent = await fs.readFile(generalIndexPath, 'utf8');
+    if (!currentContent.includes(exportStatement)) {
+      await fs.appendFile(generalIndexPath, exportStatement);
+      console.log(chalk.green(`  ✓ Updated index.${indexExt} with ${templateName} export in your project`));
+    } else {
+      console.log(chalk.yellow(`  ℹ Export for ${templateName} already exists in index.${indexExt}`));
+    }
+  } catch (error) {
+    console.log(
+      chalk.red(
+        `  ✗ Failed to update index.${indexExt}: ${(error as Error).message}`
+      )
+    );
+  }
+}
+
 // CLI prompt
 (async () => {
   // Validate the project directory
   validateProjectDirectory();
+
+  // Prompt the user to choose between components and templates
+  const { itemType } = await prompts({
+    type: "select",
+    name: "itemType",
+    message: "What would you like to add to your project?",
+    choices: [
+      { title: "Component", value: "component" },
+      { title: "Template", value: "template" }
+    ]
+  });
 
   // Prompt the user for the target directory
   const { targetDir } = await prompts({
     type: "text",
     name: "targetDir",
     message:
-      "Enter the directory where you want to add the components (e.g., src/components):",
-    initial: "src/components",
+      `Enter the directory where you want to add the ${itemType} (e.g., src/${itemType}s):`,
+    initial: `src/${itemType}s`,
   });
 
   // Ensure the target directory exists
   await fs.ensureDir(path.join(process.cwd(), targetDir));
 
-  // Prompt the user to select a component
-  const response = await prompts({
-    type: "select",
-    name: "component",
-    message: "Which component do you want to add?",
-    choices: Object.keys(components).map((comp) => ({
-      title: comp,
-      value: comp,
-    })),
-  });
+  if (itemType === "component") {
+    // Prompt the user to select a component
+    const response = await prompts({
+      type: "select",
+      name: "component",
+      message: "Which component do you want to add?",
+      choices: Object.keys(components).map((comp) => ({
+        title: comp,
+        value: comp,
+      })),
+    });
 
-  // Format the component name to match the file structure
-  const {format} = await prompts({
-    type: "select",
-    name: "format",
-    message: "Which format do you want to use?",
-    choices: [
-      { title: "TypeScript (tsx)", value: "tsx" },
-      { title: "JavaScript (jsx)", value: "jsx" },
-    ],
-  })
+    // Format selection
+    const {format} = await prompts({
+      type: "select",
+      name: "format",
+      message: "Which format do you want to use?",
+      choices: [
+        { title: "TypeScript (tsx)", value: "tsx" },
+        { title: "JavaScript (jsx)", value: "jsx" },
+      ],
+    });
 
-  if (response.component) {
-    await fetchComponent(response.component, targetDir, format);
+    if (response.component) {
+      await fetchComponent(response.component, targetDir, format);
+    }
+  } else if (itemType === "template") {
+    // Prompt the user to select a template
+    const response = await prompts({
+      type: "select",
+      name: "template",
+      message: "Which template do you want to add?",
+      choices: Object.keys(templates).map((temp) => ({
+        title: temp,
+        value: temp,
+      })),
+    });
+
+    // Format selection
+    const {format} = await prompts({
+      type: "select",
+      name: "format",
+      message: "Which format do you want to use?",
+      choices: [
+        { title: "TypeScript (tsx)", value: "tsx" },
+        { title: "JavaScript (jsx)", value: "jsx" },
+      ],
+    });
+
+    if (response.template) {
+      await fetchTemplate(response.template, targetDir, format);
+    }
   }
 })();
