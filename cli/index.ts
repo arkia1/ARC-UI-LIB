@@ -67,12 +67,12 @@ const templates: Record<string, TemplateConfig> = {
     files: [
       {
         filename: "ClientSideErrors.tsx",
-        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/ClientSideErrors.tsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/ClientSideErrors/ClientSideErrors.tsx",
         format: "tsx",
       },
       {
         filename: "ClientSideErrors.jsx",
-        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/ClientSideErrors.jsx",
+        url: "https://raw.githubusercontent.com/arkia1/ARC-UI-LIB/main/templates/errors/ClientSideErrors/ClientSideErrors.jsx",
         format: "jsx",
       },
     ],
